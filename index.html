@@ -109,6 +109,12 @@ label{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:upperca
 .tab-pane.active{display:block;animation:tabFadeIn 0.3s var(--anim-smooth) both;}
 @keyframes tabFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
+/* ENTRY FIELDS LOCK */
+.entry-locked{pointer-events:none;opacity:0.42;user-select:none;filter:grayscale(0.3);}
+.entry-locked input,.entry-locked select,.entry-locked textarea,.entry-locked button{cursor:not-allowed !important;}
+#entryLockBanner{display:none;background:linear-gradient(135deg,#fef3c7,#fefce8);border:1.5px solid #fcd34d;
+  border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;color:#92400e;margin-bottom:10px;
+  text-align:center;animation:tabFadeIn 0.25s ease both;}
 /* CARDS */
 .card{background:var(--glass-bg);backdrop-filter:var(--glass-blur);
   border:1.5px solid var(--glass-border);border-radius:var(--radius);padding:14px;
@@ -888,7 +894,8 @@ input:checked+.toggle-slider::before{transform:translateX(19px);}
 /* DRUG INVENTORY TABLE */
 .inv-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
 .inv-tbl th{background:linear-gradient(135deg,#0369a1,var(--primary),var(--teal));color:#fff;padding:9px 10px;text-align:left;font-size:11px;font-weight:800;letter-spacing:0.4px;position:sticky;top:0;}
-.inv-tbl td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.inv-tbl td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;text-align:center;}
+.inv-tbl th{text-align:center;}
 .inv-tbl tr:hover td{background:rgba(0,0,0,0.02);}
 .inv-drug-name{font-weight:700;color:var(--text);}
 .inv-dosage{color:var(--primary);font-weight:600;}
@@ -1320,22 +1327,18 @@ body { transition: background-image 0.35s ease, background-color 0.35s ease, col
     <div class="card-title"><span class="icon">🔍</span> Patient &amp; Family Search</div>
 
     <!-- Search inputs -->
-    <div class="field-row">
-      <div class="field">
+    <div class="field">
         <label>Family Phone (Patient ID)</label>
         <div class="ac-wrap search-input-wrap">
           <span class="search-icon">📱</span>
-          <input type="tel" id="phoneInput" placeholder="+91XXXXXXXXXX" maxlength="15" oninput="onPhoneInput()">
+          <input type="tel" id="phoneInput" placeholder="+91XXXXXXXXXX" maxlength="15"
+            oninput="onPhoneInput()" autocomplete="off"
+            onblur="setTimeout(()=>{const d=document.getElementById('ac-phone');if(d)d.style.display='none';},180)">
+          <div class="ac-dropdown" id="ac-phone"></div>
         </div>
         <div id="phoneHint" style="font-size:10.5px;color:var(--muted);margin-top:2px;"></div>
       </div>
-      <div class="field">
-        <label>Search by Name</label>
-        <div class="ac-wrap">
-          <input type="text" id="nameSearch" placeholder="Patient name..." oninput="searchByName(this.value)">
-          <div class="ac-dropdown" id="ac-nameSearch"></div>
-        </div>
-      </div>
+
     </div>
 
     <!-- FAMILY PANEL (shown when phone is found) -->
@@ -1383,11 +1386,13 @@ body { transition: background-image 0.35s ease, background-color 0.35s ease, col
     </div>
   </div>
 
+  <!-- LOCK BANNER -->
+  <div id="entryLockBanner">📱 Enter a registered phone number first to unlock the form</div>
   <!-- PATIENT DETAILS -->
-  <div class="card">
+  <div class="card" id="entryPatientCard">
     <div class="card-title"><span class="icon">👤</span> Patient Details</div>
     <div class="field-row-3">
-      <div class="field">
+      <div class="field" style="grid-column:span 2;">
         <label>Patient Name</label>
         <div class="ac-wrap"><input type="text" id="patientName" placeholder="Full name" oninput="acPrevData(this,'name')">
         <div class="ac-dropdown" id="ac-name"></div></div>
@@ -1396,6 +1401,8 @@ body { transition: background-image 0.35s ease, background-color 0.35s ease, col
         <label>Age (Years)</label>
         <input type="number" id="patientAge" placeholder="Age" min="0" max="120">
       </div>
+    </div>
+    <div class="field-row-3">
       <div class="field">
         <label>Gender</label>
         <select id="patientGender">
@@ -1403,10 +1410,14 @@ body { transition: background-image 0.35s ease, background-color 0.35s ease, col
           <option>Male</option><option>Female</option><option>Other</option>
         </select>
       </div>
-    </div>
-    <div class="field" style="max-width:180px;">
-      <label>Date</label>
-      <input type="date" id="visitDate">
+      <div class="field">
+        <label>Place</label>
+        <input type="text" id="patientPlace" placeholder="City / Village">
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="visitDate">
+      </div>
     </div>
   </div>
 
@@ -1461,44 +1472,16 @@ body { transition: background-image 0.35s ease, background-color 0.35s ease, col
         <div class="bmi-bar" style="display:none;" id="bmiBar"><div class="bmi-marker" id="bmiMarker"></div></div>
       </div>
     </div>
-    <!-- DM-Specific Lab Values -->
-    <div id="dmLabSection" style="margin-top:9px;border-top:1px solid var(--border-light);padding-top:9px;">
-      <div style="font-size:10.5px;font-weight:700;color:var(--primary);text-transform:uppercase;margin-bottom:7px;">🩸 Diabetes Parameters</div>
-      <div class="grid-5">
-        <div class="vital-field field">
-          <label>FBS</label>
-          <input type="number" id="vFBS" placeholder="100" oninput="checkVitals()">
-          <div class="vital-unit">mg/dL</div><span class="vital-alert" id="al-fbs"></span>
-        </div>
-        <div class="vital-field field">
-          <label>GRBS</label>
-          <input type="number" id="vGRBS" placeholder="120">
-          <div class="vital-unit">mg/dL</div>
-        </div>
-        <div class="vital-field field">
-          <label>PPBS</label>
-          <input type="number" id="vPPBS" placeholder="140">
-          <div class="vital-unit">mg/dL</div>
-        </div>
-        <div class="vital-field field">
-          <label>HbA1c</label>
-          <input type="number" id="vHbA1c" placeholder="7.0" step="0.1" oninput="checkVitals()">
-          <div class="vital-unit">%</div><span class="vital-alert" id="al-hba1c"></span>
-        </div>
-        <div class="vital-field field">
-          <label>Creatinine</label>
-          <input type="number" id="vCreat" placeholder="1.0" step="0.1">
-          <div class="vital-unit">mg/dL</div>
-        </div>
-      </div>
-      <!-- DM Targets -->
-      <div class="dm-targets">
-        <div class="dm-target"><div class="val" id="dmFBSVal">—</div><div class="lbl">FBS</div><div class="tgt">Target: &lt;126</div></div>
-        <div class="dm-target"><div class="val" id="dmA1cVal">—</div><div class="lbl">HbA1c</div><div class="tgt">Target: &lt;7%</div></div>
-        <div class="dm-target"><div class="val" id="dmBMIVal">—</div><div class="lbl">BMI</div><div class="tgt">Target: &lt;25</div></div>
-      </div>
-    </div>
+
     </div><!-- end vitalsBody collapsible -->
+  </div>
+  <!-- Hidden DM lab fields for data compatibility (not shown in UI) -->
+  <div style="display:none;" aria-hidden="true">
+    <input type="number" id="vFBS">
+    <input type="number" id="vGRBS">
+    <input type="number" id="vPPBS">
+    <input type="number" id="vHbA1c">
+    <input type="number" id="vCreat">
   </div>
   <div class="card">
     <div class="card-header-row">
@@ -1814,7 +1797,7 @@ body { transition: background-image 0.35s ease, background-color 0.35s ease, col
     <button class="btn btn-outline btn-sm" onclick="loadAnalytics()">🔄 Refresh</button>
   </div>
   <div class="analytics-grid" id="statsGrid">
-    <div class="stat-card" style="animation-delay:0.05s"><div class="stat-icon">👥</div><div class="stat-value" id="st-patients">—</div><div class="stat-label">Patients</div></div>
+    <div class="stat-card" style="animation-delay:0.05s;cursor:pointer;" onclick="showAnalyticsPatientList()" title="Click to view patient visit list"><div class="stat-icon">👥</div><div class="stat-value" id="st-patients">—</div><div class="stat-label">Patients <span style="font-size:9px;">▶</span></div></div>
     <div class="stat-card" style="animation-delay:0.15s"><div class="stat-icon">📅</div><div class="stat-value" id="st-today">—</div><div class="stat-label">Today</div></div>
     <div class="stat-card" style="animation-delay:0.2s"><div class="stat-icon">🗓️</div><div class="stat-value" id="st-month">—</div><div class="stat-label">This Month</div></div>
     <div class="stat-card" style="animation-delay:0.25s;grid-column:span 2;"><div class="stat-icon">🦠</div><div class="stat-value" id="st-diag" style="font-size:13px;">—</div><div class="stat-label">Top Diagnosis</div></div>
@@ -1830,6 +1813,14 @@ body { transition: background-image 0.35s ease, background-color 0.35s ease, col
   <div class="chart-card">
     <div class="chart-title">🩸 DM Parameter Averages (Last 30 Days)</div>
     <canvas id="dmChart" height="130"></canvas>
+  </div>
+  <!-- Patient visits list panel (hidden by default) -->
+  <div id="analyticsPatientPanel" style="display:none;margin-top:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="section-title">👥 All Patient Visits</div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('analyticsPatientPanel').style.display='none'">✕ Close</button>
+    </div>
+    <div id="analyticsPatientList"></div>
   </div>
 </div>
 
@@ -1865,12 +1856,27 @@ body { transition: background-image 0.35s ease, background-color 0.35s ease, col
         <button class="btn btn-primary btn-sm" onclick="addInventoryDrug()">✅ Add</button>
       </div>
     </div>
+    <!-- Upload from file -->
+    <div style="border-top:1px solid var(--border-light);margin-top:10px;padding-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:11.5px;font-weight:600;color:var(--muted);">Bulk Upload:</span>
+      <label class="btn btn-outline btn-sm" style="cursor:pointer;gap:5px;">
+        📂 Excel / CSV / PDF
+        <input type="file" id="invBulkUpload" accept=".csv,.xlsx,.xls,.pdf,.txt" style="display:none" onchange="invBulkImport(event)">
+      </label>
+      <span id="invUploadStatus" style="font-size:11px;color:var(--muted);"></span>
+    </div>
   </div>
 
-  <!-- Search / filter -->
-  <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;">
-    <input type="text" id="invSearch" placeholder="🔍 Search drug name..." style="flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12.5px;background:var(--surface);"
-      oninput="filterInventory(this.value)">
+  <!-- Search + Form filter -->
+  <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <input type="text" id="invSearch" placeholder="🔍 Search drug name..." style="flex:2;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12.5px;background:var(--surface);"
+      oninput="filterInventory()">
+    <select id="invFormFilter" style="flex:1;min-width:110px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12.5px;" onchange="filterInventory()">
+      <option value="">All Forms</option>
+      <option>Tablet</option><option>Capsule</option><option>Syrup</option>
+      <option>Injection</option><option>Drops</option><option>Cream</option>
+      <option>Gel</option><option>Inhaler</option><option>Patch</option><option>Others</option>
+    </select>
     <span id="invCount" style="font-size:11px;color:var(--muted);white-space:nowrap;"></span>
   </div>
 
@@ -1924,6 +1930,24 @@ body { transition: background-image 0.35s ease, background-color 0.35s ease, col
         <input type="checkbox" id="settingsDarkToggle" onchange="toggleDarkMode()">
         <span class="toggle-slider"></span>
       </label>
+    </div>
+  </div>
+
+  <!-- Backup & Restore -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-title"><span class="icon">💾</span> Backup & Restore</div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">All patient records, visits, ICD codes and drug inventory are stored locally. Export a backup file to keep a copy.</p>
+    <div class="btn-group">
+      <button class="btn btn-primary btn-sm" onclick="settingsExportBackup()">⬇️ Export Full Backup</button>
+      <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+        ⬆️ Import Backup
+        <input type="file" accept=".json" style="display:none" onchange="settingsImportBackup(event)">
+      </label>
+    </div>
+    <div id="backupStatusMsg" style="margin-top:8px;font-size:11.5px;color:var(--muted);"></div>
+    <div style="margin-top:12px;border-top:1px solid var(--border-light);padding-top:10px;">
+      <button class="btn btn-danger btn-sm" onclick="settingsClearData()">🗑️ Clear All Data</button>
+      <span style="font-size:11px;color:var(--muted);margin-left:8px;">Cannot be undone</span>
     </div>
   </div>
 
@@ -3888,14 +3912,82 @@ async function onPhoneInput() {
   const raw = document.getElementById('phoneInput').value;
   const phone = normalizePhone(raw);
   const hint = document.getElementById('phoneHint');
+
+  // Show phone autocomplete dropdown
+  if(raw.length >= 2) {
+    phoneACSuggest(raw);
+  } else {
+    const acEl = document.getElementById('ac-phone');
+    if(acEl) acEl.style.display = 'none';
+  }
+
   if(!phone) {
     hint.textContent = raw.length>3 ? 'Enter 10 digits, 91XXXXXXXXXX, or +91XXXXXXXXXX' : '';
     hint.style.color = 'var(--danger)';
-    hideFamilyPanel(); return;
+    hideFamilyPanel();
+    lockEntryFields(true);
+    return;
   }
-  hint.textContent = `✓ ${displayPhone(phone)}`;
+  hint.textContent = '✓ '+displayPhone(phone);
   hint.style.color = 'var(--accent)';
+  lockEntryFields(false);
   await searchFamily(phone);
+}
+
+async function phoneACSuggest(raw) {
+  const ac = document.getElementById('ac-phone');
+  if(!ac) return;
+  const ql = raw.replace(/[^0-9]/g,'');
+  if(ql.length < 2) { ac.style.display='none'; return; }
+  try {
+    const families = await dbGetAll('families');
+    const members = await dbGetAll('family_members');
+    // Build unique phones
+    const phones = [...new Set(families.map(f=>f.phone))];
+    const matches = phones.filter(p => {
+      const digits = p.replace(/[^0-9]/g,'');
+      return digits.includes(ql);
+    }).slice(0,4);
+    if(!matches.length) { ac.style.display='none'; return; }
+    ac.innerHTML = '';
+    for(const ph of matches) {
+      const mems = members.filter(m=>m.phone===ph);
+      const item = document.createElement('div');
+      item.className = 'ac-item';
+      const names = mems.map(m=>m.name).filter(Boolean).join(', ');
+      item.innerHTML = '<span class="ac-code">📱</span><span class="ac-name">+'+ph+(names?' &mdash; <em style="color:var(--muted);font-size:11px;">'+escH(names)+'</em>':'')+'</span>';
+      item.onmousedown = (e) => {
+        e.preventDefault();
+        document.getElementById('phoneInput').value = '+'+ph;
+        ac.style.display = 'none';
+        onPhoneInput();
+      };
+      ac.appendChild(item);
+    }
+    ac.style.display = 'block';
+  } catch(e) { ac.style.display='none'; }
+}
+
+function lockEntryFields(lock) {
+  const banner = document.getElementById('entryLockBanner');
+  // Lock all cards after the search card
+  const cardsToLock = ['entryPatientCard'];
+  // Also lock vitals, soap, medications, followup
+  ['vitalsBody','soapBody','medBody','followupBody'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el && el.parentElement) {
+      if(lock) el.parentElement.classList.add('entry-locked');
+      else el.parentElement.classList.remove('entry-locked');
+    }
+  });
+  cardsToLock.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) {
+      if(lock) el.classList.add('entry-locked');
+      else el.classList.remove('entry-locked');
+    }
+  });
+  if(banner) banner.style.display = lock ? 'block' : 'none';
 }
 
 // ── FAMILY SEARCH ──
@@ -4007,6 +4099,7 @@ async function selectMember(patientId, scrollToEntry=true){
   currentMember    = member;
   currentPatientId = patientId;
   currentPhone     = member.phone;
+  lockEntryFields(false);
 
   // Update breadcrumb
   document.getElementById('bcMember').textContent = '👤 '+member.name;
@@ -4183,6 +4276,7 @@ function populateForm(v) {
   document.getElementById('patientName').value = v.patientName||'';
   document.getElementById('patientAge').value = v.age||'';
   document.getElementById('patientGender').value = v.gender||'';
+  if(document.getElementById('patientPlace')) document.getElementById('patientPlace').value = v.place||'';
   document.getElementById('visitDate').value = v.date||todayISO();
   document.getElementById('vBP').value = v.bp||'';
   document.getElementById('vPR').value = v.pr||'';
@@ -4254,7 +4348,7 @@ async function searchByName(query) {
   });
   ac.style.display = 'block';
 }
-document.getElementById('nameSearch').addEventListener('blur',()=>setTimeout(()=>{document.getElementById('ac-nameSearch').style.display='none';},150));
+
 
 // =====================================================
 // VITALS CHECK & BMI
@@ -4917,6 +5011,7 @@ function getFormData(){
     patientId: currentPatientId || (phone ? phone+'_1' : ''),
     patientName:document.getElementById('patientName').value.trim(),
     age:document.getElementById('patientAge').value,gender:document.getElementById('patientGender').value,
+    place:(document.getElementById('patientPlace')||{}).value||'',
     date:document.getElementById('visitDate').value||todayISO(),visitNumber:currentVisitNum,
     encounterType:currentEncType,
     bp:document.getElementById('vBP').value,pr:document.getElementById('vPR').value,
@@ -4967,7 +5062,7 @@ async function saveVisit(){
 function clearForm(){
   if(!confirm('Clear form?')) return;
   ['vBP','vPR','vSpO2','vTemp','vWeight','vHeight','vFBS','vPPBS','vHbA1c','vCreat',
-    'complaints','examination','labInvestigations','planNotes','followupDate','followupInv','diagnosisInput'].forEach(id=>{
+    'complaints','examination','labInvestigations','planNotes','followupDate','followupInv','diagnosisInput','patientPlace'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   const gEl=document.getElementById('vGRBS');if(gEl)gEl.value='';
@@ -4993,9 +5088,10 @@ function updateRxPage(){
   document.getElementById('rx-age').textContent=(d.age?d.age+' yrs':'—')+(d.gender?' / '+d.gender:'');
   document.getElementById('rx-date').textContent=fmtDate(d.date);
   // Place from clinic info
+  // Place: from patient's own place field, fallback to clinic location
   const ci=typeof loadClinicInfo==='function'?loadClinicInfo():{};
   const placeEl=document.getElementById('rx-place');
-  if(placeEl) placeEl.textContent=ci.location||'Odupara';
+  if(placeEl) placeEl.textContent=d.place||ci.location||'Odupara';
   // Vitals row fields
   document.getElementById('rx-bp').textContent=d.bp||'—';
   const grbsEl=document.getElementById('rx-grbs');
@@ -6802,6 +6898,7 @@ async function init(){
     setTimeout(restoreDraft, 800);
     await _refreshInventoryCache();
     _initSoapAIWatcher();
+    lockEntryFields(true); // unlock after phone is confirmed
     showToast('Shifa Clinic EMR Ready ✓','success',2500);
   }catch(e){showToast('DB Error: '+e.message,'error');}
 }
@@ -6863,11 +6960,16 @@ async function loadDrugInventory() {
   invDrugNameAC('');
 }
 
-function filterInventory(q) {
+function filterInventory() {
+  const q = (document.getElementById('invSearch')||{}).value || '';
+  const formF = (document.getElementById('invFormFilter')||{}).value || '';
   const list = window._inventoryCache||[];
-  if(!q) { renderInventoryTable(list); return; }
-  const ql=q.toLowerCase();
-  renderInventoryTable(list.filter(d=>(d.drugName||'').toLowerCase().includes(ql)||(d.form||'').toLowerCase().includes(ql)));
+  let filtered = list;
+  if(q) { const ql=q.toLowerCase(); filtered=filtered.filter(d=>(d.drugName||'').toLowerCase().includes(ql)); }
+  if(formF) { filtered=filtered.filter(d=>(d.form||'')=== formF); }
+  renderInventoryTable(filtered);
+  const cnt = document.getElementById('invCount');
+  if(cnt) cnt.textContent = filtered.length+' drugs';
 }
 
 function renderInventoryTable(list) {
@@ -6881,7 +6983,7 @@ function renderInventoryTable(list) {
   const rows = list.map((d,idx)=>`
     <tr id="invrow-${d.id}">
       <td style="font-size:11.5px;color:var(--muted);font-weight:600;">${idx+1}</td>
-      <td><span class="inv-drug-name">${escH(d.drugName)}</span>${d.autoAdded?'<span class="inv-auto-badge">AUTO</span>':''}</td>
+      <td><span class="inv-drug-name">${escH(d.drugName)}</span></td>
       <td><span class="inv-form-badge">${escH(d.form||'—')}</span></td>
       <td>
         <button class="inv-del-btn" onclick="deleteInventoryDrug(${d.id})" title="Remove">🗑️</button>
@@ -7665,6 +7767,196 @@ document.addEventListener('click', function(e) {
   btn.style.setProperty('--rx', ((e.clientX - r.left) / r.width * 100) + '%');
   btn.style.setProperty('--ry', ((e.clientY - r.top) / r.height * 100) + '%');
 }, true);
+
+
+// ══ INVENTORY BULK IMPORT ══════════════════════════════
+async function invBulkImport(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const status = document.getElementById('invUploadStatus');
+  status.textContent = 'Processing...';
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  try {
+    let drugs = [];
+    if(ext === 'csv' || ext === 'txt') {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(Boolean);
+      // Skip header row if it looks like one
+      const start = (lines[0]||'').toLowerCase().includes('drug') ? 1 : 0;
+      for(let i=start; i<lines.length; i++) {
+        const parts = lines[i].split(/[,\t|;]/).map(s=>s.trim().replace(/^["']|["']$/g,''));
+        const name = parts[0]; const form = parts[1] || 'Tablet';
+        if(name && name.length > 1) drugs.push({name, form});
+      }
+    } else if(ext === 'xlsx' || ext === 'xls') {
+      // Read as binary, extract text between XML tags — simple parse
+      const buf = await file.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      // Try to find shared strings (xlsx) — very basic extraction
+      const decoder = new TextDecoder('utf-8', {fatal:false});
+      const txt = decoder.decode(bytes);
+      const cells = [...txt.matchAll(/<t(?:\s[^>]*)?>([^<]{2,60})<\/t>/g)].map(m=>m[1].trim());
+      const nameSet = new Set();
+      for(let i=0;i<cells.length;i++) {
+        const v = cells[i].replace(/\s+/g,' ').trim();
+        if(v.length >= 3 && v.length <= 60 && /[a-zA-Z]/.test(v) && !v.toLowerCase().match(/^(drug|name|form|type|tablet|capsule|generic|brand)$/)) {
+          const form = cells[i+1] && ['Tablet','Capsule','Syrup','Injection','Drops','Cream','Gel','Inhaler','Patch','Others'].includes(cells[i+1]) ? cells[i+1] : 'Tablet';
+          if(!nameSet.has(v.toLowerCase())) { nameSet.add(v.toLowerCase()); drugs.push({name:v, form}); }
+        }
+      }
+    } else if(ext === 'pdf') {
+      status.textContent = 'PDF import: paste drug names one per line in CSV format for best results.';
+      event.target.value=''; return;
+    }
+
+    if(!drugs.length) { status.textContent = 'No drugs found. Ensure first column = Drug Name.'; event.target.value=''; return; }
+
+    let added=0, skipped=0;
+    for(const drug of drugs) {
+      const name = drug.name.trim();
+      if(!name || name.length < 2) { skipped++; continue; }
+      const key = name.toLowerCase().replace(/\s+/g,'_');
+      const existing = await new Promise(res=>{
+        const tx=db.transaction('drug_inventory','readonly');
+        const req=tx.objectStore('drug_inventory').index('drugKey').get(key);
+        req.onsuccess=()=>res(req.result); req.onerror=()=>res(null);
+      });
+      if(existing) { skipped++; continue; }
+      await new Promise((res,rej)=>{
+        const tx=db.transaction('drug_inventory','readwrite');
+        const req=tx.objectStore('drug_inventory').add({drugKey:key,drugName:name,form:drug.form,autoAdded:false,addedAt:new Date().toISOString()});
+        req.onsuccess=()=>res(); req.onerror=e=>rej(e);
+      });
+      added++;
+    }
+    await _refreshInventoryCache();
+    await loadDrugInventory();
+    status.textContent = 'Imported: '+added+' drugs added, '+skipped+' skipped.';
+    showToast('Bulk import done: '+added+' added','success');
+  } catch(err) {
+    status.textContent = 'Error: '+err.message;
+    showToast('Import error','error');
+  }
+  event.target.value='';
+}
+
+// ══ SETTINGS BACKUP / RESTORE / CLEAR ══════════════════
+async function settingsExportBackup() {
+  const msg = document.getElementById('backupStatusMsg');
+  try {
+    const patients = await dbGetAll('family_members');
+    const families  = await dbGetAll('families');
+    const visits    = await dbGetAll('visits');
+    const invItems  = await dbGetAll('drug_inventory');
+    const data = {
+      version: 12, exportedAt: new Date().toISOString(),
+      clinic: 'Shifa Clinic', families, patients, visits,
+      drug_inventory: invItems,
+      clinic_info: localStorage.getItem('shifa_clinic_info_v1')||'',
+      layout: localStorage.getItem('shifa_layout')||'phone',
+    };
+    const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ShifaEMR_backup_'+new Date().toISOString().slice(0,10)+'.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    if(msg) msg.textContent = 'Backup exported: '+visits.length+' visits, '+patients.length+' patients, '+invItems.length+' drugs.';
+    showToast('Backup exported','success');
+  } catch(e) {
+    if(msg) msg.textContent = 'Export error: '+e.message;
+    showToast('Export error','error');
+  }
+}
+
+async function settingsImportBackup(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const msg = document.getElementById('backupStatusMsg');
+  if(!confirm('Importing will REPLACE all current data. Continue?')) { event.target.value=''; return; }
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if(!data.visits || !data.patients) throw new Error('Invalid backup file');
+    // Clear and restore
+    const stores = ['families','family_members','visits','drug_inventory'];
+    for(const s of stores) {
+      await new Promise((res,rej)=>{
+        const tx=db.transaction(s,'readwrite');
+        const req=tx.objectStore(s).clear();
+        req.onsuccess=res; req.onerror=rej;
+      });
+    }
+    const importStore = async (storeName, items) => {
+      for(const item of (items||[])) {
+        await new Promise((res,rej)=>{
+          const tx=db.transaction(storeName,'readwrite');
+          const req=tx.objectStore(storeName).put(item);
+          req.onsuccess=res; req.onerror=rej;
+        });
+      }
+    };
+    await importStore('families', data.families);
+    await importStore('family_members', data.patients);
+    await importStore('visits', data.visits);
+    await importStore('drug_inventory', data.drug_inventory);
+    if(data.clinic_info) localStorage.setItem('shifa_clinic_info_v1', data.clinic_info);
+    if(data.layout) localStorage.setItem('shifa_layout', data.layout);
+    if(msg) msg.textContent = 'Restored: '+data.visits.length+' visits, '+data.patients.length+' patients.';
+    showToast('Backup restored','success');
+    await loadAllFieldData();
+    await _refreshInventoryCache();
+    applyClinicInfoToPage(loadClinicInfo());
+  } catch(e) {
+    if(msg) msg.textContent = 'Restore error: '+e.message;
+    showToast('Restore error','error');
+  }
+  event.target.value='';
+}
+
+async function settingsClearData() {
+  if(!confirm('Delete ALL patient data, visits, and inventory? This cannot be undone.')) return;
+  if(!confirm('Are you absolutely sure? Type OK to confirm.')) return;
+  try {
+    for(const s of ['families','family_members','visits','drug_inventory','profiles','queue','lifestyle_patients','lifestyle_flowsheet','lifestyle_reminders']) {
+      try { await new Promise((res,rej)=>{const tx=db.transaction(s,'readwrite');tx.objectStore(s).clear().onsuccess=res;tx.onerror=rej;}); } catch(e){}
+    }
+    showToast('All data cleared','info');
+    location.reload();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+}
+
+// ══ ANALYTICS PATIENT VISIT LIST ════════════════════════
+async function showAnalyticsPatientList() {
+  const panel = document.getElementById('analyticsPatientPanel');
+  const list  = document.getElementById('analyticsPatientList');
+  if(!panel || !list) return;
+  panel.style.display = 'block';
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+  list.innerHTML = '<div class="skeleton" style="height:40px;margin-bottom:6px;"></div>'.repeat(5);
+  try {
+    const all = await dbGetAll('visits');
+    // Sort newest first
+    all.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+    if(!all.length) { list.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No visits recorded</div></div>'; return; }
+    const rows = all.map((v,i)=>{
+      const diag = (v.diagnosis||'—').split('\n')[0].replace(/[A-Z]\d+[\d.]* – /,'').substring(0,40);
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border-light);font-size:12.5px;' + (i%2===0?'background:var(--bg)':'') + '">'
+        +'<span style="min-width:28px;text-align:right;font-size:11px;color:var(--muted);">'+(i+1)+'</span>'
+        +'<span style="flex:1;font-weight:600;">' + escH(v.patientName||'—') + '</span>'
+        +'<span style="color:var(--muted);font-size:11px;min-width:80px;">' + fmtDate(v.date||'') + '</span>'
+        +'<span style="flex:2;color:var(--text2);font-size:11.5px;">' + escH(diag) + '</span>'
+        +'<span style="font-size:10.5px;color:var(--primary);min-width:80px;text-align:right;">' + (v.phone ? displayPhone(v.phone) : '—') + '</span>'
+        +'</div>';
+    }).join('');
+    list.innerHTML = '<div style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);">'
+      +'<div style="display:flex;gap:10px;padding:7px 12px;background:linear-gradient(135deg,var(--primary),var(--teal));color:white;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;">'
+      +'<span style="min-width:28px;">#</span><span style="flex:1;">Name</span><span style="min-width:80px;">Date</span><span style="flex:2;">Diagnosis</span><span style="min-width:80px;text-align:right;">Phone</span>'
+      +'</div>' + rows + '</div>';
+  } catch(e) { list.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">Error: '+e.message+'</div></div>'; }
+}
 
 document.addEventListener('DOMContentLoaded',init);
 </script>
